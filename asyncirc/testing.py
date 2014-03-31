@@ -23,14 +23,16 @@ import asyncio
 from unittest.mock import patch
 
 
-class AsyncIRCTestCase(unittest.TestCase):
-
-    reader_data = []
-    writer_data = []
+class AsyncIRCBaseTestCase(unittest.TestCase):
 
     def setUp(self):
+        self.writer_data = []
+        self.reader_data = self.get_incoming_data_generator()
         self.loop = asyncio.get_event_loop()
         self.patch_open_connection()
+
+    def get_incoming_data_generator(self):
+        return iter([])
 
     def patch_stream_reader(self):
         self.stream_reader_patch = patch('asyncio.StreamReader', spec=asyncio.StreamReader)

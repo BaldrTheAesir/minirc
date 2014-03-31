@@ -15,14 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from asyncirc.testing import AsyncIRCTestCase
+from asyncirc.testing import AsyncIRCBaseTestCase
 from asyncirc.client import Connection
 
 
-class TestConnection(AsyncIRCTestCase):
+class TestConnection(AsyncIRCBaseTestCase):
 
-    with open('traffic/freenode.txt', 'br') as file:
-        reader_data = iter([line for line in file])
+    def get_incoming_data_generator(self):
+        with open('traffic/freenode.txt', 'br') as file:
+            yield from file
 
     def test_connect_success(self):
         conn = Connection('nick', 'ident', 'realname')
