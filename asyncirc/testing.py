@@ -28,28 +28,13 @@ class AsyncIRCTestCase(unittest.TestCase):
     reader_data = []
     writer_data = []
 
-    @asyncio.coroutine
-    def fill_fut(self, fut, line):
-        fut.set_result(line)
-
-    @asyncio.coroutine
-    def get_data_iterator(self):
-        """ Returns a Future that will be filled by an asynchonous task. """
-        for line in self.reader_data:
-            # We use a Future that is immediatly set to
-            fut = asyncio.Future(loop=self.loop)
-            fut.set_result(line)
-            result = yield from asyncio.wait_for(fut, timeout=None)
-            return result
-        return b''
-
     def setUp(self):
         self.loop = asyncio.get_event_loop()
         self.patch_open_connection()
 
     def patch_stream_reader(self):
         self.stream_reader_patch = patch('asyncio.StreamReader', spec=asyncio.StreamReader)
-        self.stream_reader_patch.readline = self.get_data_iterator
+        self.stream_reader_patch.readline = asyncio.coroutine(lambda: next(self.reader_data, b''))
         self.stream_reader_patch.start()
         self.addCleanup(self.stream_reader_patch.stop)
 
