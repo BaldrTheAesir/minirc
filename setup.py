@@ -45,6 +45,6 @@ setup(
 
     keywords='irc asyncio',
     packages=find_packages(exclude=['docs', 'tests*']),
-    install_requires = ['colorama'],
+    install_requires = [],
 
 )
