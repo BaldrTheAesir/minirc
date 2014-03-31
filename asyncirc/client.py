@@ -58,6 +58,10 @@ class Connection:
             data = yield from self._stream_reader.readline()
             if len(data) == 0:
                 break
+            if data[-1] == 10:  # 10 = \n
+                data = data[:-1]
+            if data[-1] == 13:  # 13 = \r
+                data = data[:-1]
             line = irc_decode(data)
             print(line)
 
@@ -68,10 +72,3 @@ class Channel:
 
 class User:
     pass
-
-
-if __name__ == '__main__':
-    e = asyncio.get_event_loop()
-    c = Connection('LOOOOL', 'MDR', 'LOOL')
-    e.run_until_complete(c.connect('irc.freenode.org', 6667))
-    e.run_until_complete(c.run())

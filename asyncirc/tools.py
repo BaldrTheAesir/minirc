@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
+
 _ENCODINGS = ('utf-8', 'cp1252')
 
 
@@ -25,3 +27,11 @@ def irc_decode(data, encodings=_ENCODINGS):
         except UnicodeDecodeError:
             continue
     return data.decode('ascii', errors='ignore')
+
+
+def split_userhost(userhost):
+    split = re.split(r'[!@]', userhost, maxsplit=2)
+    nick = split.pop(0)
+    ident = split and split.pop(0) or None
+    host = split and split.pop(0) or None
+    return nick, ident, host
