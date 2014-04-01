@@ -21,12 +21,12 @@ with codecs.open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='asyncirc',
-    version=find_version('asyncirc', '__init__.py'),
+    name='minirc',
+    version=find_version('minirc', '__init__.py'),
     description='An asyncio based IRC library for Python 3',
     long_description=long_description,
 
-    url='https://github.com/thibautd/asyncirc',
+    url='https://github.com/thibautd/minirc',
 
     author='Thibaut DIRLIK',
     author_email='thibaut.dirlik@gmail.com',

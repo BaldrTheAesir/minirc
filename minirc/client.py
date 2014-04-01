@@ -1,4 +1,4 @@
-# AsyncIRC - A modern IRC library using asyncio
+# MinIRC - A modern IRC library using asyncio
 #
 # Copyright (C) 2013-2014 - Thibaut DIRLIK (thibaut.dirlik@gmail.com)
 #
@@ -17,12 +17,23 @@
 
 import asyncio
 
-from asyncirc.tools import irc_decode
+from minirc.tools import irc_decode
+
+IRC_CONNECTED = 'connected'  # Connection established
+IRC_AUTHED = 'authed'  # Connection established and credentials accepted
+IRC_DISCONNECTED = 'disconnected'  # Disconnected
 
 
 class Connection:
 
-    def __init__(self, nick, ident, realname, loop=None):
+    def __init__(self, nick, ident, realname, encoding='utf-8', loop=None):
+        """ Creates a new connection to an IRC server.
+
+        :param nick: The nickname to use.
+        :param ident: The ident to use.
+        :param realname: The realname to use.
+        :param encoding: The output encoding.
+        """
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
@@ -31,6 +42,8 @@ class Connection:
         self._nick = nick
         self._ident = ident
         self._realname = realname
+        self._encoding = encoding
+        self.status = IRC_DISCONNECTED
 
     def send(self, line, *args, **kwargs):
         if line[-1] != '\n':
@@ -43,10 +56,11 @@ class Connection:
     def connect(self, host, port, password=None, ssl=None):
         self._stream_reader, self._stream_writer = yield from asyncio.open_connection(
             host, port, ssl=ssl, loop=self._loop)
+        self.status = IRC_CONNECTED
         self.send('NICK {}', self._nick)
         self.send('USER 0 0 {} :{}', self._ident, self._realname)
         if password:
-            self.send('PASS {}', password)
+            self.send('PASS :{}', password)
 
     @asyncio.coroutine
     def run(self):

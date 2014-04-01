@@ -1,4 +1,4 @@
-# AsyncIRC - A modern IRC library using asyncio
+# MinIRC - A modern IRC library using asyncio
 #
 # Copyright (C) 2013-2014 - Thibaut DIRLIK (thibaut.dirlik@gmail.com)
 #

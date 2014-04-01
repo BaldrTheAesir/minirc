@@ -1,4 +1,4 @@
-# AsyncIRC - A modern IRC library using asyncio
+# MinIRC - A modern IRC library using asyncio
 #
 # Copyright (C) 2013-2014 - Thibaut DIRLIK (thibaut.dirlik@gmail.com)
 #
@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from unittest import TestCase
-from asyncirc.tools import irc_decode, split_userhost
+from minirc.tools import irc_decode, split_userhost
 
 
 class TestTools(TestCase):

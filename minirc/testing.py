@@ -1,4 +1,4 @@
-# AsyncIRC - A modern IRC library using asyncio
+# MinIRC - A modern IRC library using asyncio
 #
 # Copyright (C) 2013-2014 - Thibaut DIRLIK (thibaut.dirlik@gmail.com)
 #
@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-""" This module provides tools to unit-test asyncirc. """
+""" This module provides tools to unit-test minirc. """
 
 import unittest
 import asyncio
@@ -69,3 +69,26 @@ class AsyncIRCBaseTestCase(unittest.TestCase):
         patcher = patch.object(asyncio, 'open_connection', return_value=result)
         patcher.start()
         self.addCleanup(patcher.stop)
+
+    def run_blocking(self, coro):
+        """ Runs the event loop until the coro is done. """
+        self.loop.run_until_complete(coro)
+
+    def assertSent(self, data, position=None):
+        """ Asserts that the specified data has been sent.
+
+        The "\n" is not needed at the end, for simplicity,
+        it is added automatically.
+
+        If a ``position`` is specified, it must be at the ``position`` in the
+        sent queue, starting from 0.
+        """
+        if data[-1] != '\n':
+            data += '\n'
+        data = data.encode('utf-8')
+        if position is not None:
+            if position+1 > len(self.writer_data):
+                self.fail('No data at the specified position')
+            self.assertEquals(self.writer_data[position], data)
+        else:
+            self.assertIn(data, self.writer_data)

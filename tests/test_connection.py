@@ -1,4 +1,4 @@
-# AsyncIRC - A modern IRC library using asyncio
+# MinIRC - A modern IRC library using asyncio
 #
 # Copyright (C) 2013-2014 - Thibaut DIRLIK (thibaut.dirlik@gmail.com)
 #
@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from asyncirc.testing import AsyncIRCBaseTestCase
-from asyncirc.client import Connection
+from minirc.testing import AsyncIRCBaseTestCase
+from minirc.client import Connection, IRC_CONNECTED, IRC_DISCONNECTED
 
 
 class TestConnection(AsyncIRCBaseTestCase):
@@ -25,7 +25,12 @@ class TestConnection(AsyncIRCBaseTestCase):
         with open('traffic/freenode.txt', 'br') as file:
             yield from file
 
-    def test_connect_success(self):
+    def test_connect(self):
         conn = Connection('nick', 'ident', 'realname')
-        self.loop.run_until_complete(conn.connect('localhost', 8888))
-        self.loop.run_until_complete(conn.run())
+        self.assertEquals(IRC_DISCONNECTED, conn.status)
+        self.run_blocking(conn.connect('localhost', 8888, password='password'))
+        self.assertEquals(IRC_CONNECTED, conn.status)
+        self.assertSent('NICK nick')
+        self.assertSent('USER 0 0 ident :realname')
+        self.assertSent('PASS :password')
+        self.run_blocking(conn.run())
