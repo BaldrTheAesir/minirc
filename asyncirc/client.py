@@ -19,10 +19,6 @@ import asyncio
 
 from asyncirc.tools import irc_decode
 
-# A tuple of encodings that will be tried when recieving a message. If UTF8 failed, the message will be decoded
-# using CP1252, and it fails again, unknown character will be replaced by '?'.
-INPUT_ENCODINGS = ('utf-8', 'cp1252')
-
 
 class Connection:
 

@@ -39,21 +39,18 @@ def split_userhost(userhost):
     :param userhost: A string in the format ``<nick>[!<ident>@<host>]``.
     """
     nick, _, ident_host = userhost.rpartition('!')
-    if not _:  # No '!'
+    if not _:  # No '!', this means we only have a nick, or user@host.
+        if '@' not in ident_host:
+            return userhost, None, None
+        nick = None
+    elif nick == '':
         nick = None
     ident, _, host = ident_host.rpartition('@')
-    if not _:  # No '@'
-        if nick:
-            ident = host
-            host = None
-        else:
-            nick = userhost
-            ident = None
-            host = None
-    if not ident:
-        ident = None
-    if not host:
+    if not _:  # No '@' ! This means we only have an ident.
+        ident = None if host == '' else host
         host = None
-    if not nick:
-        nick = None
+    if ident == '':
+        ident = None
+    if host == '':
+        host = None
     return nick, ident, host
