@@ -15,18 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 
-_ENCODINGS = ('utf-8', 'cp1252')
+def irc_decode(data):
+    """ Decodes bytes coming from IRC.
 
+    This function will try to encode the bytes using the UTF-8 encoding
+    which is becoming one of the most used encoding on IRC.
 
-def irc_decode(data, encodings=_ENCODINGS):
-    for encoding in encodings:
-        try:
-            return data.decode(encoding, errors='strict')
-        except UnicodeDecodeError:
-            continue
-    return data.decode('ascii', errors='ignore')
+    However, in case of error, it will fallback using the latin-1 encoding,
+    which is a codepoint-to-byte encoding, and can't fail.
+    """
+    try:
+        return data.decode('utf-8', errors='strict')
+    except UnicodeDecodeError:
+        return data.decode('latin-1')
 
 
 def split_userhost(userhost):

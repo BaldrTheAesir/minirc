@@ -29,7 +29,6 @@ class TestTools(TestCase):
 
     def test_splituserhost_nohost(self):
         nick, ident, host = split_userhost('nick!ident')
-        print(nick, ident, host)
         self.assertEqual('nick', nick)
         self.assertEqual('ident', ident)
         self.assertEqual(None, host)
@@ -71,4 +70,9 @@ class TestTools(TestCase):
         self.assertEqual('host', host)
 
     def test_irc_decode(self):
-        pass
+        utf_8_bytes = 'ބ'.encode('utf-8')
+        utf_16_bytes = 'ބ'.encode('utf-16')
+        utf_32_bytes = 'ބ'.encode('utf-32')
+        self.assertEquals(irc_decode(utf_8_bytes), 'ބ')
+        self.assertEquals(irc_decode(utf_16_bytes), '\xff\xfe\x84\x07')
+        self.assertEquals(irc_decode(utf_32_bytes), '\xff\xfe\x00\x00\x84\x07\x00\x00')
