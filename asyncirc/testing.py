@@ -19,6 +19,7 @@
 
 import unittest
 import asyncio
+import functools
 
 from unittest.mock import patch
 
@@ -34,14 +35,28 @@ class AsyncIRCBaseTestCase(unittest.TestCase):
     def get_incoming_data_generator(self):
         return iter([])
 
+    @asyncio.coroutine
+    def _readline(self):
+        """ A replacement method for StreamReader.readline(). """
+        fut = asyncio.Future()
+        try:
+            line = next(self.reader_data)
+        except StopIteration:
+            return b''  # When the iterator has been fully consumed, returns an empty byte.
+        # To simulate the readline bahvior, we have to "wait" for data. We use a
+        # Future that is set later (in fact, ASAP) with the read line.
+        self.loop.call_soon(functools.partial(fut.set_result, line))
+        line = yield from fut
+        return line
+
     def patch_stream_reader(self):
-        self.stream_reader_patch = patch('asyncio.StreamReader', spec=asyncio.StreamReader)
-        self.stream_reader_patch.readline = asyncio.coroutine(lambda: next(self.reader_data, b''))
+        self.stream_reader_patch = patch('asyncio.streams.StreamReader', spec=asyncio.streams.StreamReader)
+        self.stream_reader_patch.readline = self._readline
         self.stream_reader_patch.start()
         self.addCleanup(self.stream_reader_patch.stop)
 
     def patch_stream_writer(self):
-        self.stream_writer_patch = patch('asyncio.StreamWriter', spec=asyncio.StreamWriter)
+        self.stream_writer_patch = patch('asyncio.streams.StreamWriter', spec=asyncio.streams.StreamWriter)
         self.stream_writer_patch.write = lambda data: self.writer_data.append(data)
         self.stream_writer_patch.start()
         self.addCleanup(self.stream_writer_patch.stop)
@@ -54,16 +69,3 @@ class AsyncIRCBaseTestCase(unittest.TestCase):
         patcher = patch.object(asyncio, 'open_connection', return_value=result)
         patcher.start()
         self.addCleanup(patcher.stop)
-
-    def assertFirstSent(self, data, clean=True):
-        if clean:
-            sent_data = self.writer_data.pop(0)
-        else:
-            sent_data = self.writer_data[0]
-        self.assertEquals(sent_data, data)
-
-    def assertSent(self, data):
-        self.assertIn(self.writer_data, data)
-
-    def assertNothingSent(self):
-        self.assertEquals(len(self.writer_data), 0)
