@@ -21,23 +21,54 @@ from asyncirc.tools import irc_decode, split_userhost
 
 class TestTools(TestCase):
 
-    def test_splituserhost(self):
+    def test_splituserhost_full(self):
         nick, ident, host = split_userhost('nick!ident@host')
-        self.assertEqual(nick, 'nick')
-        self.assertEqual(ident, 'ident')
-        self.assertEqual(host, 'host')
+        self.assertEqual('nick', nick)
+        self.assertEqual('ident', ident)
+        self.assertEqual('host', host)
+
+    def test_splituserhost_nohost(self):
         nick, ident, host = split_userhost('nick!ident')
-        self.assertEqual(nick, 'nick')
-        self.assertEqual(ident, 'ident')
-        self.assertEqual(host, None)
+        print(nick, ident, host)
+        self.assertEqual('nick', nick)
+        self.assertEqual('ident', ident)
+        self.assertEqual(None, host)
+
+    def test_splituserhost_noident(self):
+        nick, ident, host = split_userhost('nick!@host')
+        self.assertEqual('nick', nick)
+        self.assertEqual(None, ident)
+        self.assertEqual('host', host)
+
+    def test_splituserhost_noident_nohost(self):
+        nick, ident, host = split_userhost('nick!@')
+        self.assertEqual('nick', nick)
+        self.assertEqual(None, ident)
+        self.assertEqual(None, host)
+
+    def test_splituserhost_nonick(self):
+        nick, ident, host = split_userhost('ident@host')
+        self.assertEqual(None, nick)
+        self.assertEqual('ident', ident)
+        self.assertEqual('host', host)
+        nick, ident, host = split_userhost('!ident@host')
+        self.assertEqual(None, nick)
+        self.assertEqual('ident', ident)
+        self.assertEqual('host', host)
+
+    def test_splituserhost_nothing(self):
         nick, ident, host = split_userhost('nick')
-        self.assertEqual(nick, 'nick')
-        self.assertEqual(ident, None)
-        self.assertEqual(host, None)
-        nick, ident, host = split_userhost('')
-        self.assertEqual(nick, '')
-        self.assertEqual(ident, None)
-        self.assertEqual(host, None)
+        self.assertEqual('nick', nick)
+        self.assertEqual(None, ident)
+        self.assertEqual(None, host)
+
+    def test_splituserhost_multiplechars(self):
+        # This should never happen. However, we consider the right-most character
+        # to be the one doing the separation between nick/ident/host.
+        nick, ident, host = split_userhost('nick!nick@ident!ident@ident@host')
+        self.assertEqual('nick!nick@ident', nick)
+        self.assertEqual('ident@ident', ident)
+        self.assertEqual('host', host)
 
     def test_irc_decode(self):
         pass

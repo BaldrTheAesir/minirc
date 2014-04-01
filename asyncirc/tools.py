@@ -30,8 +30,28 @@ def irc_decode(data, encodings=_ENCODINGS):
 
 
 def split_userhost(userhost):
-    split = re.split(r'[!@]', userhost, maxsplit=2)
-    nick = split.pop(0)
-    ident = split and split.pop(0) or None
-    host = split and split.pop(0) or None
+    """ Returns a 3-tuple nick, ident, host from the scpecified userhost.
+
+    The returned ``ident`` and ``host`` can be ``None``
+
+    :param userhost: A string in the format ``<nick>[!<ident>@<host>]``.
+    """
+    nick, _, ident_host = userhost.rpartition('!')
+    if not _:  # No '!'
+        nick = None
+    ident, _, host = ident_host.rpartition('@')
+    if not _:  # No '@'
+        if nick:
+            ident = host
+            host = None
+        else:
+            nick = userhost
+            ident = None
+            host = None
+    if not ident:
+        ident = None
+    if not host:
+        host = None
+    if not nick:
+        nick = None
     return nick, ident, host
