@@ -54,3 +54,34 @@ def split_userhost(userhost):
     if host == '':
         host = None
     return nick, ident, host
+
+
+def split_raw(raw):
+    """ Parses a raw input from the IRC server.
+
+    The input data can be formatted like this:
+        :<origin> <command> [param] [param] [: param with space]
+    Or like this:
+        <command> [param] [param] [: param with space]
+    In the latter case, we consider the origin to be ``None``.
+
+    Returns a 3-tuple containong the origin, the command and a list of arguments.
+    """
+    origin, command, args = None, None, []
+    line_splitted = raw.split()
+    for index, word in enumerate(line_splitted):
+        if index == 0:
+            if word[0] == ':':
+                origin = word[1:]
+            else:
+                command = word
+        elif index == 1 and origin is not None:
+            command = word
+        else:
+            if word[0] == ':':
+                # We start searching at index 1 to exclude optional first ':' in origin
+                args.append(raw[raw.index(':', 1)+1:])
+                break
+            else:
+                args.append(word)
+    return origin, command, args

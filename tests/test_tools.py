@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from unittest import TestCase
-from minirc.tools import irc_decode, split_userhost
+from minirc.tools import irc_decode, split_userhost, split_raw
 
 
 class TestTools(TestCase):
@@ -76,3 +76,13 @@ class TestTools(TestCase):
         self.assertEquals(irc_decode(utf_8_bytes), 'ބ')
         self.assertEquals(irc_decode(utf_16_bytes), '\xff\xfe\x84\x07')
         self.assertEquals(irc_decode(utf_32_bytes), '\xff\xfe\x00\x00\x84\x07\x00\x00')
+
+    def test_split_raw(self):
+        self.assertEquals(('origin', 'PING', []), split_raw(':origin PING'))
+        self.assertEquals(('origin', 'PING', ['a']), split_raw(':origin PING a'))
+        self.assertEquals(('origin', 'PING', ['a', 'b']), split_raw(':origin PING a :b'))
+        self.assertEquals(('origin', 'PING', ['a', 'b', 'c d: ef']), split_raw(':origin PING a b :c d: ef'))
+        self.assertEquals((None, 'PING', []), split_raw('PING'))
+        self.assertEquals((None, 'PING', ['a']), split_raw('PING a'))
+        self.assertEquals((None, 'PING', ['a', 'b', 'c', 'd e:fg:']), split_raw('PING a b c :d e:fg:'))
+        self.assertEquals((None, None, []), split_raw(''))

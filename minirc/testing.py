@@ -22,6 +22,7 @@ import asyncio
 import functools
 
 from unittest.mock import patch
+from minirc.client import Connection
 
 
 class AsyncIRCBaseTestCase(unittest.TestCase):
@@ -31,6 +32,12 @@ class AsyncIRCBaseTestCase(unittest.TestCase):
         self.reader_data = self.get_incoming_data_generator()
         self.loop = asyncio.get_event_loop()
         self.patch_open_connection()
+        self.conn = Connection()
+        self.wait(self.conn.connect, 'localhost', 8888)
+        self.conn_run = asyncio.Task(self.conn.run())
+
+    def tearDown(self):
+        self.loop.run_until_complete(self.conn_run)
 
     def get_incoming_data_generator(self):
         return iter([])
@@ -66,13 +73,13 @@ class AsyncIRCBaseTestCase(unittest.TestCase):
         self.patch_stream_writer()
         result = asyncio.Future()
         result.set_result((self.stream_reader_patch, self.stream_writer_patch))
-        patcher = patch.object(asyncio, 'open_connection', return_value=result)
+        patcher = patch('asyncio.open_connection', return_value=result)
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def run_blocking(self, coro):
+    def wait(self, coro, *coro_args, **coro_kwargs):
         """ Runs the event loop until the coro is done. """
-        self.loop.run_until_complete(coro)
+        self.loop.run_until_complete(coro(*coro_args, **coro_kwargs))
 
     def assertSent(self, data, position=None):
         """ Asserts that the specified data has been sent.

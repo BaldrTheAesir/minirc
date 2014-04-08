@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import asyncio
+
 from minirc.testing import AsyncIRCBaseTestCase
 from minirc.client import Connection, IRC_CONNECTED, IRC_DISCONNECTED
 
@@ -26,11 +28,10 @@ class TestConnection(AsyncIRCBaseTestCase):
             yield from file
 
     def test_connect(self):
-        conn = Connection('nick', 'ident', 'realname')
-        self.assertEquals(IRC_DISCONNECTED, conn.status)
-        self.run_blocking(conn.connect('localhost', 8888, password='password'))
-        self.assertEquals(IRC_CONNECTED, conn.status)
-        self.assertSent('NICK nick')
-        self.assertSent('USER 0 0 ident :realname')
-        self.assertSent('PASS :password')
-        self.run_blocking(conn.run())
+        self.assertEquals(IRC_CONNECTED, self.conn.status)
+
+    def test_authed(self):
+        self.wait(self.conn.auth, 'Minirc', 'minirc', 'MinIRC!', 'password')
+        self.assertSent('NICK Minirc', 0)
+        self.assertSent('USER 0 0 minirc :MinIRC!', 1)
+        self.assertSent('PASS :password', 2)
