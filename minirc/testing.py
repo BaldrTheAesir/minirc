@@ -19,67 +19,58 @@
 
 import unittest
 import asyncio
+import asyncio.test_utils
 import functools
+import contextlib
 
-from unittest.mock import patch
+from unittest.mock import MagicMock
 from minirc.client import Connection
+
+
+def asynctest(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        @asyncio.coroutine
+        def wrapped_coro():
+            yield from func(self, *args, **kwargs)
+        return self.loop.run_until_complete(wrapped_coro())
+    return wrapper
 
 
 class AsyncIRCBaseTestCase(unittest.TestCase):
 
+    @asyncio.coroutine
+    def _create_connection(self, *args, **kwargs):
+        """ A fake function to simulate BaseEventLoop.create_connection(). """
+        return self.transport, None
+
     def setUp(self):
+        self.conn_run_fut = False
         self.writer_data = []
-        self.reader_data = self.get_incoming_data_generator()
-        self.loop = asyncio.get_event_loop()
-        self.patch_open_connection()
-        self.conn = Connection()
-        self.wait(self.conn.connect, 'localhost', 8888)
-        self.conn_run = asyncio.Task(self.conn.run())
+        self.transport = MagicMock(spec=asyncio.transports.Transport)
+        self.transport.write = self.writer_data.append
+        self.transport.close = lambda: self.conn._stream_reader.feed_eof()
+        self.loop = asyncio.new_event_loop()
+        self.loop.create_connection = self._create_connection
+        self.conn = Connection(loop=self.loop)
 
     def tearDown(self):
-        self.loop.run_until_complete(self.conn_run)
+        if self.conn_run_fut:
+            self.get_fake_eof()
+            asyncio.wait_for(self.conn_run_fut, timeout=None, loop=self.loop)
 
-    def get_incoming_data_generator(self):
-        return iter([])
+    def get_fake_data(self, *files, eof=True):
+        if self.conn_run_fut is False:
+            self.conn_run_fut = asyncio.async(self.conn.run(), loop=self.loop)
+        for filename in files:
+            with open(filename, 'rb') as file:
+                for line in file:
+                    self.conn._stream_reader.feed_data(line)
+        if eof:
+            self.get_fake_eof()
 
-    @asyncio.coroutine
-    def _readline(self):
-        """ A replacement method for StreamReader.readline(). """
-        fut = asyncio.Future()
-        try:
-            line = next(self.reader_data)
-        except StopIteration:
-            return b''  # When the iterator has been fully consumed, returns an empty byte.
-        # To simulate the readline bahvior, we have to "wait" for data. We use a
-        # Future that is set later (in fact, ASAP) with the read line.
-        self.loop.call_soon(functools.partial(fut.set_result, line))
-        line = yield from fut
-        return line
-
-    def patch_stream_reader(self):
-        self.stream_reader_patch = patch('asyncio.streams.StreamReader', spec=asyncio.streams.StreamReader)
-        self.stream_reader_patch.readline = self._readline
-        self.stream_reader_patch.start()
-        self.addCleanup(self.stream_reader_patch.stop)
-
-    def patch_stream_writer(self):
-        self.stream_writer_patch = patch('asyncio.streams.StreamWriter', spec=asyncio.streams.StreamWriter)
-        self.stream_writer_patch.write = lambda data: self.writer_data.append(data)
-        self.stream_writer_patch.start()
-        self.addCleanup(self.stream_writer_patch.stop)
-
-    def patch_open_connection(self):
-        self.patch_stream_reader()
-        self.patch_stream_writer()
-        result = asyncio.Future()
-        result.set_result((self.stream_reader_patch, self.stream_writer_patch))
-        patcher = patch('asyncio.open_connection', return_value=result)
-        patcher.start()
-        self.addCleanup(patcher.stop)
-
-    def wait(self, coro, *coro_args, **coro_kwargs):
-        """ Runs the event loop until the coro is done. """
-        self.loop.run_until_complete(coro(*coro_args, **coro_kwargs))
+    def get_fake_eof(self):
+        self.conn._stream_reader.feed_eof()
 
     def assertSent(self, data, position=None):
         """ Asserts that the specified data has been sent.

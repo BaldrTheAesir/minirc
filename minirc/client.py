@@ -53,6 +53,11 @@ class Connection:
             host, port, ssl=ssl, loop=self._loop)
         self.status = IRC_CONNECTED
 
+    def disconnect(self):
+        """ Disconnects from the server. """
+        if self.status is IRC_CONNECTED:
+            self._stream_writer.close()
+
     @asyncio.coroutine
     def auth(self, nick, ident, realname, password=None):
         """ Authenticate to the IRC server. """
@@ -69,14 +74,21 @@ class Connection:
             data = yield from self._stream_reader.readline()
             if len(data) == 0:
                 break
+            data = data.strip()
             if data[-1] == 10:  # 10 = \n
                 data = data[:-1]
             if data[-1] == 13:  # 13 = \r
                 data = data[:-1]
             origin, command, args = split_raw(irc_decode(data))
-            print(origin, command, args)
             if command == '001':
                 self._authed.set_result(True)
+        self._on_disconnected()
+
+    def _on_disconnected(self):
+        """ This function is called when the connection is closed. """
+        self.status = IRC_DISCONNECTED
+        self._authed = asyncio.Future(loop=self._loop)
+
 
 class Channel:
     pass

@@ -73,9 +73,9 @@ class TestTools(TestCase):
         utf_8_bytes = 'ބ'.encode('utf-8')
         utf_16_bytes = 'ބ'.encode('utf-16')
         utf_32_bytes = 'ބ'.encode('utf-32')
-        self.assertEquals(irc_decode(utf_8_bytes), 'ބ')
-        self.assertEquals(irc_decode(utf_16_bytes), '\xff\xfe\x84\x07')
-        self.assertEquals(irc_decode(utf_32_bytes), '\xff\xfe\x00\x00\x84\x07\x00\x00')
+        self.assertEquals(irc_decode(utf_8_bytes), 'ބ')  # decoded using utf-8
+        self.assertEquals(irc_decode(utf_16_bytes), '\xff\xfe\x84\x07')  # decoded using latin-1
+        self.assertEquals(irc_decode(utf_32_bytes), '\xff\xfe\x00\x00\x84\x07\x00\x00')  # decoded using latin-1
 
     def test_split_raw(self):
         self.assertEquals(('origin', 'PING', []), split_raw(':origin PING'))

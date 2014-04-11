@@ -15,23 +15,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import asyncio
-
-from minirc.testing import AsyncIRCBaseTestCase
-from minirc.client import Connection, IRC_CONNECTED, IRC_DISCONNECTED
+from minirc.testing import AsyncIRCBaseTestCase, asynctest
+from minirc.client import IRC_CONNECTED, IRC_DISCONNECTED, IRC_AUTHED
 
 
 class TestConnection(AsyncIRCBaseTestCase):
 
-    def get_incoming_data_generator(self):
-        with open('traffic/freenode.txt', 'br') as file:
-            yield from file
-
+    @asynctest
     def test_connect(self):
+        yield from self.conn.connect('localhost', 8888)
         self.assertEquals(IRC_CONNECTED, self.conn.status)
 
+    @asynctest
     def test_authed(self):
-        self.wait(self.conn.auth, 'Minirc', 'minirc', 'MinIRC!', 'password')
+        yield from self.conn.connect('localhost', 8888)
+        self.get_fake_data('traffic/auth.txt')
+        yield from self.conn.auth('Minirc', 'minirc', 'MinIRC!', 'password')
+        self.assertEquals(IRC_AUTHED, self.conn.status)
         self.assertSent('NICK Minirc', 0)
         self.assertSent('USER 0 0 minirc :MinIRC!', 1)
         self.assertSent('PASS :password', 2)
+
+    @asynctest
+    def test_disconnected(self):
+        yield from self.conn.connect('localhost', 8888)
+        self.get_fake_data('traffic/auth.txt', eof=False)
+        self.conn.disconnect()
+        yield from self.conn_run_fut
+        self.assertEquals(IRC_DISCONNECTED, self.conn.status)
