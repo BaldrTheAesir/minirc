@@ -30,7 +30,8 @@ class TestConnection(AsyncIRCBaseTestCase):
     def test_authed(self):
         yield from self.conn.connect('localhost', 8888)
         self.get_fake_data('traffic/auth.txt')
-        yield from self.conn.auth('Minirc', 'minirc', 'MinIRC!', 'password')
+        self.conn.auth('Minirc', 'minirc', 'MinIRC!', 'password')
+        yield from self.conn.events['authed'].wait()
         self.assertEquals(IRC_AUTHED, self.conn.status)
         self.assertSent('NICK Minirc', 0)
         self.assertSent('USER 0 0 minirc :MinIRC!', 1)

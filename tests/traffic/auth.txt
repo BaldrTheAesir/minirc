@@ -2,6 +2,4 @@
 :test.minirc.net NOTICE * :*** Checking Ident
 :test.minirc.net NOTICE * :*** Couldn't look up your hostname
 :test.minirc.net NOTICE * :*** No Ident response
-:test.minirc.net CAP * LS :account-notify extended-join identify-msg multi-prefix sasl
-:test.minirc.net CAP * ACK :identify-msg
 :test.minirc.net 001 minirc :Welcome to the Minirc Chat Network minirc

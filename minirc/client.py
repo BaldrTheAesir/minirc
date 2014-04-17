@@ -34,10 +34,7 @@ class Connection:
         self._stream_reader = None
         self._stream_writer = None
         self._encoding = encoding
-        # This future will be set once we got a 001 raw. If the authentication fails,
-        # an IRCError exception will be raised, with detailed information.
-        self._authed = asyncio.Future(loop=loop)
-        self.status = IRC_DISCONNECTED
+        self._status = IRC_DISCONNECTED
 
     def send(self, line, *args, **kwargs):
         if line[-1] != '\n':
@@ -45,6 +42,14 @@ class Connection:
         if args or kwargs:
             line = line.format(*args, **kwargs)
         self._stream_writer.write(line.encode('utf-8'))
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
 
     @asyncio.coroutine
     def connect(self, host, port, ssl=None):
@@ -58,15 +63,12 @@ class Connection:
         if self.status is IRC_CONNECTED:
             self._stream_writer.close()
 
-    @asyncio.coroutine
     def auth(self, nick, ident, realname, password=None):
         """ Authenticate to the IRC server. """
         self.send('NICK {}', nick)
         self.send('USER 0 0 {} :{}', ident, realname)
         if password:
             self.send('PASS :{}', password)
-        yield from self._authed
-        self.status = IRC_AUTHED
 
     @asyncio.coroutine
     def run(self):
@@ -80,14 +82,18 @@ class Connection:
             if data[-1] == 13:  # 13 = \r
                 data = data[:-1]
             origin, command, args = split_raw(irc_decode(data))
-            if command == '001':
-                self._authed.set_result(True)
+            self._on_raw(origin, command, args)
         self._on_disconnected()
+
+    def _on_raw(self, origin, command, args):
+        print(origin, command, args)
+        if command == '001':
+            print('authed')
+            self.status = IRC_AUTHED
 
     def _on_disconnected(self):
         """ This function is called when the connection is closed. """
         self.status = IRC_DISCONNECTED
-        self._authed = asyncio.Future(loop=self._loop)
 
 
 class Channel:
