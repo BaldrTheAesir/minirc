@@ -21,7 +21,6 @@ import unittest
 import asyncio
 import asyncio.test_utils
 import functools
-import contextlib
 
 from unittest.mock import MagicMock
 from minirc.client import Connection
@@ -44,33 +43,41 @@ class AsyncIRCBaseTestCase(unittest.TestCase):
         """ A fake function to simulate BaseEventLoop.create_connection(). """
         return self.transport, None
 
+    @asyncio.coroutine
+    def start_server(self):
+        """ Starts a local server to recieve connection. """
+        self.server = yield from asyncio.start_server(self._client_connected,
+            host='localhost', loop=self.loop)
+        sock = self.server.sockets[0]
+        full_addr = sock.getsockname()
+        host, port = full_addr[0], full_addr[1]  # Could contain more elements if IPv6
+        return host, port
+
+    @asyncio.coroutine
+    def _client_connected(self, reader, writer):
+        self.client_reader = reader
+        self.client_writer = writer
+
     def setUp(self):
-        self.conn_run_fut = False
         self.writer_data = []
-        self.transport = MagicMock(spec=asyncio.transports.Transport)
-        self.transport.write = self.writer_data.append
-        self.transport.close = lambda: self.conn._stream_reader.feed_eof()
         self.loop = asyncio.new_event_loop()
-        self.loop.create_connection = self._create_connection
+        self.server_host, self.server_port = self.loop.run_until_complete(self.start_server())
         self.conn = Connection(loop=self.loop)
+        self.conn_run_fut = None
 
     def tearDown(self):
-        if self.conn_run_fut:
-            self.get_fake_eof()
-            asyncio.wait_for(self.conn_run_fut, timeout=None, loop=self.loop)
+        self.client_writer.close()
+        self.server.close()
+        self.loop.run_until_complete(self.server.wait_closed())
 
     def get_fake_data(self, *files, eof=True):
-        if self.conn_run_fut is False:
+        if self.conn_run_fut is None:
             self.conn_run_fut = asyncio.async(self.conn.run(), loop=self.loop)
         for filename in files:
             with open(filename, 'rb') as file:
-                for line in file:
-                    self.conn._stream_reader.feed_data(line)
+                self.client_writer.writelines(file)
         if eof:
-            self.get_fake_eof()
-
-    def get_fake_eof(self):
-        self.conn._stream_reader.feed_eof()
+            self.client_writer.close()
 
     def assertSent(self, data, position=None):
         """ Asserts that the specified data has been sent.
